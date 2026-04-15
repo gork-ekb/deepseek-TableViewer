@@ -1,8 +1,36 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Data Views";
+    var groups = ViewBag.Groups as List<string>;
+    var allViews = ViewBag.AllViews as List<TableViewer.Models.ViewConfig>;
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container mt-4">
+    <h1>Доступные представления данных</h1>
+
+    @if (allViews == null || !allViews.Any())
+    {
+        <div class="alert alert-warning">
+            В таблице 'views' пока нет записей. Добавьте их через SQL или настройте импорт из JSON.
+        </div>
+    }
+    else
+    {
+        // Простое отображение всех запросов списком
+        <div class="list-group">
+            @foreach (var view in allViews)
+            {
+                <a href="/@view.Link" class="list-group-item list-group-item-action">
+                    <h5 class="mb-1">@view.Header</h5>
+                    <p class="mb-1">@view.Description</p>
+                    <small class="text-muted">
+                        Группа: @view.Group | Сервер: @view.Host | БД: @view.DatabaseName | Таблица: @view.TableName
+                    </small>
+                    @if (view.IsProtected)
+                    {
+                        <span class="badge bg-warning ms-2">Требуется авторизация</span>
+                    }
+                </a>
+            }
+        </div>
+    }
 </div>

@@ -1,0 +1,94 @@
+@model IEnumerable<dynamic>
+
+@{
+    var viewConfig = ViewBag.ViewConfig as TableViewer.Models.ViewConfig;
+    ViewData["Title"] = viewConfig?.Header;
+    var columns = ViewBag.Columns as List<string>;
+    var filters = ViewBag.Filters as Dictionary<string, string>;
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>@viewConfig?.Header</h1>
+        <a href="/" class="btn btn-secondary">← Назад к списку</a>
+    </div>
+
+    @if (viewConfig != null && !string.IsNullOrEmpty(viewConfig.Description))
+    {
+        <div class="alert alert-info">
+            @viewConfig.Description
+        </div>
+    }
+
+    @if (viewConfig?.AllowFiltering == true && columns != null && columns.Any())
+    {
+        <div class="card mb-3">
+            <div class="card-header">
+                <strong>Фильтрация данных</strong>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    @foreach (var column in columns.Take(5)) // Ограничим количество полей для фильтрации
+                    {
+                        <div class="col-md-3">
+                            <label class="form-label">@column</label>
+                            <input type="text" name="@column" class="form-control"
+                                   placeholder="Введите значение..."
+                                   value="@(filters?.ContainsKey(column) == true ? filters[column] : "")" />
+                        </div>
+                    }
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">Применить фильтры</button>
+                        <a href="@Context.Request.Path" class="btn btn-secondary">Сбросить</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        @foreach (var column in columns ?? new List<string>())
+                        {
+                            <th>
+                                @column
+                                @if (viewConfig?.AllowSorting == true)
+                                {
+                                    <div class="btn-group btn-group-sm ms-2" role="group">
+                                        <a href="?sortColumn=@column&sortDirection=ASC" class="btn btn-outline-light btn-sm">↑</a>
+                                        <a href="?sortColumn=@column&sortDirection=DESC" class="btn btn-outline-light btn-sm">↓</a>
+                                    </div>
+                                }
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            @foreach (var column in columns ?? new List<string>())
+                            {
+                                var value = item.GetType().GetProperty(column)?.GetValue(item, null);
+                                <td>@value</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="text-muted">
+                Всего записей: @Model.Count()
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            Нет данных для отображения. Возможно, таблица пуста или не существует.
+        </div>
+    }
+</div>
