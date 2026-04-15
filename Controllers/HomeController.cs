@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using TableViewer.Services;
 
-namespace RDMWithDatabase.Controllers;
+namespace TableViewer.Controllers;
 
 public class HomeController(
     ViewService viewService,
