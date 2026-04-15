@@ -5,6 +5,11 @@ using TableViewer.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+if (builder.Environment.IsDevelopment())
+{
+    builder.WebHost.UseUrls("https://localhost:5001", "http://localhost:5000");
+}
+
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
