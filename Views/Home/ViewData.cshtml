@@ -5,6 +5,22 @@
     ViewData["Title"] = viewConfig?.Header;
     var columns = ViewBag.Columns as List<string>;
     var filters = ViewBag.Filters as Dictionary<string, string>;
+
+    // Преобразуем все данные в список словарей для удобства
+    var dataRows = new List<Dictionary<string, object>>();
+    foreach (var item in Model ?? Enumerable.Empty<dynamic>())
+    {
+        var dict = new Dictionary<string, object>();
+        var itemDict = item as IDictionary<string, object>;
+        if (itemDict != null)
+        {
+            foreach (var column in columns ?? new List<string>())
+            {
+                dict[column] = itemDict.ContainsKey(column) ? itemDict[column] : null;
+            }
+            dataRows.Add(dict);
+        }
+    }
 }
 
 <div class="container mt-4">
@@ -28,7 +44,7 @@
             </div>
             <div class="card-body">
                 <form method="get" class="row g-3">
-                    @foreach (var column in columns.Take(5)) // Ограничим количество полей для фильтрации
+                    @foreach (var column in columns.Take(5))
                     {
                         <div class="col-md-3">
                             <label class="form-label">@column</label>
@@ -46,7 +62,7 @@
         </div>
     }
 
-    @if (Model != null && Model.Any())
+    @if (dataRows.Any())
     {
         <div class="table-responsive">
             <table class="table table-striped table-bordered table-hover">
@@ -68,12 +84,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in Model)
+                    @foreach (var row in dataRows)
                     {
                         <tr>
                             @foreach (var column in columns ?? new List<string>())
                             {
-                                var value = item.GetType().GetProperty(column)?.GetValue(item, null);
+                                var value = row.ContainsKey(column) ? row[column] : null;
                                 <td>@value</td>
                             }
                         </tr>
@@ -81,7 +97,7 @@
                 </tbody>
             </table>
             <div class="text-muted">
-                Всего записей: @Model.Count()
+                Всего записей: @dataRows.Count
             </div>
         </div>
     }
