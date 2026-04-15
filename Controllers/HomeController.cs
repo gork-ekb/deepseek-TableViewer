@@ -1,31 +1,55 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using TableViewer.Models;
+using TableViewer.Services;
 
-namespace TableViewer.Controllers;
+namespace RDMWithDatabase.Controllers;
 
-public class HomeController : Controller
+public class HomeController(
+    ViewService viewService,
+    AuthService authService,
+    ILogger<HomeController> logger) : Controller
 {
-    private readonly ILogger<HomeController> _logger;
-
-    public HomeController(ILogger<HomeController> logger)
+    public async Task<IActionResult> Index()
     {
-        _logger = logger;
-    }
+        var groups = await viewService.GetGroupsAsync();
+        var allViews = await viewService.GetAllViewsAsync();
 
-    public IActionResult Index()
-    {
+        ViewBag.Groups = groups;
+        ViewBag.AllViews = allViews;
+
         return View();
     }
 
-    public IActionResult Privacy()
+    [Route("{link}")]
+    public async Task<IActionResult> ViewData(
+        string link,
+        [FromQuery] Dictionary<string, string> filters,
+        [FromQuery] string? sortColumn,
+        [FromQuery] string? sortDirection)
     {
-        return View();
-    }
+        var viewConfig = await viewService.GetViewByLinkAsync(link);
 
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
-    {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        if (viewConfig == null)
+        {
+            return NotFound();
+        }
+
+        if (!authService.CanAccessProtectedView(viewConfig))
+        {
+            return Challenge();
+        }
+
+        var (data, columns) = await viewService.ExecuteViewQueryAsync(
+            viewConfig,
+            viewConfig.AllowFiltering ? filters : null,
+            viewConfig.AllowSorting ? sortColumn : null,
+            viewConfig.AllowSorting ? sortDirection : null);
+
+        ViewBag.ViewConfig = viewConfig;
+        ViewBag.Columns = columns;
+        ViewBag.Filters = filters;
+        ViewBag.SortColumn = sortColumn;
+        ViewBag.SortDirection = sortDirection;
+
+        return View(data);
     }
 }

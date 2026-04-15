@@ -1,7 +1,21 @@
+using Microsoft.EntityFrameworkCore;
+using TableViewer.Data;
+using TableViewer.Services;
+using TableViewer.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// Добавляем DbContext
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Регистрируем сервисы
+builder.Services.AddScoped<ViewService>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
@@ -9,21 +23,47 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
-
-app.MapStaticAssets();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
+// Инициализация БД
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        await context.Database.EnsureCreatedAsync();
+
+        // Миграция из JSON если нужно
+        var jsonPath = Path.Combine(app.Environment.ContentRootPath, "config", "queries.json");
+        if (File.Exists(jsonPath) && !await context.Views.AnyAsync())
+        {
+            var jsonData = await File.ReadAllTextAsync(jsonPath);
+            var views = System.Text.Json.JsonSerializer.Deserialize<List<ViewConfig>>(jsonData);
+            if (views != null)
+            {
+                await context.Views.AddRangeAsync(views);
+                await context.SaveChangesAsync();
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while initializing the database.");
+    }
+}
 
 app.Run();
