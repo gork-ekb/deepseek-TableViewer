@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using TableViewer.Services;
 
-namespace RDMWithDatabase.Controllers;
+namespace TableViewer.Controllers;
 
-public class HomeController : Controller
+public class HomeController : BaseController
 {
     private readonly ViewService _viewService;
     private readonly AuthService _authService;
@@ -12,17 +12,18 @@ public class HomeController : Controller
     public HomeController(
         ViewService viewService,
         AuthService authService,
-        ILogger<HomeController> logger)
+        ILogger<HomeController> logger,
+        SettingsService settingsService) : base(settingsService)  // Добавлен settingsService
     {
         _viewService = viewService;
         _authService = authService;
         _logger = logger;
     }
 
-    // Главная страница - список групп
-// Главная страница - список групп таблицей
+    // Главная страница - список групп таблицей
     public async Task<IActionResult> Index()
     {
+        await SetAppTitle();  // Устанавливаем заголовок
         var groups = await _viewService.GetGroupsAsync();
         var allViews = await _viewService.GetAllViewsAsync();
 
@@ -34,6 +35,7 @@ public class HomeController : Controller
     [Route("group/{groupName}")]
     public async Task<IActionResult> Group(string groupName)
     {
+        await SetAppTitle();  // Устанавливаем заголовок
         var allViews = await _viewService.GetAllViewsAsync();
         var viewsInGroup = allViews.Where(v => v.Group == groupName).ToList();
 
@@ -54,6 +56,7 @@ public class HomeController : Controller
         [FromQuery] string? sortColumn,
         [FromQuery] string? sortDirection)
     {
+        await SetAppTitle();  // Устанавливаем заголовок
         var viewConfig = await _viewService.GetViewByLinkAsync(link);
 
         if (viewConfig == null)

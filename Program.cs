@@ -5,26 +5,19 @@ using TableViewer.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-if (builder.Environment.IsDevelopment())
-{
-    builder.WebHost.UseUrls("https://localhost:5001", "http://localhost:5000");
-}
-
-// Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// Добавляем DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Регистрируем сервисы
 builder.Services.AddScoped<ViewService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<SettingsService>();  // ДОБАВИТЬ
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -52,7 +45,7 @@ using (var scope = app.Services.CreateScope())
         await context.Database.EnsureCreatedAsync();
 
         // Миграция из JSON если нужно
-        var jsonPath = Path.Combine(app.Environment.ContentRootPath, "config", "queries.json");
+        var jsonPath = Path.Combine(app.Environment.ContentRootPath, "queries.json");
         if (File.Exists(jsonPath) && !await context.Views.AnyAsync())
         {
             var jsonData = await File.ReadAllTextAsync(jsonPath);
@@ -62,6 +55,13 @@ using (var scope = app.Services.CreateScope())
                 await context.Views.AddRangeAsync(views);
                 await context.SaveChangesAsync();
             }
+        }
+
+        // Проверяем, есть ли настройка "header", если нет - создаем
+        if (!await context.Settings.AnyAsync(s => s.Name == "header"))
+        {
+            context.Settings.Add(new Setting { Name = "header", Value = "TableViewer" });
+            await context.SaveChangesAsync();
         }
     }
     catch (Exception ex)
