@@ -121,7 +121,7 @@ else
             </div>
         }
 
-        if (filters != null && filters.Any(f => !string.IsNullOrEmpty(f.Value)))
+        @* if (filters != null && filters.Any(f => !string.IsNullOrEmpty(f.Value)))
         {
             <div class="text-muted mt-2">
                 <small><strong>Активные фильтры:</strong>
@@ -135,7 +135,7 @@ else
                 <a href="?clearFilters=true" class="ms-2">Очистить все</a>
                 </small>
             </div>
-        }
+        } *@
     }
 }
 

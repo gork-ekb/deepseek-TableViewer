@@ -6,6 +6,44 @@
     <title>@ViewData["Title"] - TableViewer</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        .filter-active { background-color: #FFCD80 !important; }
+        .filter-active-header { background-color: #FF9A00 !important; color: #000 !important; }
+        .sort-icon, .filter-icon { margin-left: 5px; font-size: 0.8em; }
+        .dropdown-toggle::after { display: none; }
+        .table-responsive { overflow-x: auto !important; }
+        .table-dark th { background-color: #373D6D !important; color: white; }
+        .btn-outline-light { color: white !important; border-color: white !important; }
+        .btn-outline-light:hover { background-color: rgba(255,255,255,0.2) !important; }
+        .pagination .page-item.active .page-link {
+            background-color: #373D6D;
+            border-color: #373D6D;
+        }
+        a {
+            color: #373D6D;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        /* Стили для пагинации */
+        .pagination .page-link {
+            color: #373D6D;
+            border-color: #dee2e6;
+        }
+        .pagination .page-item.active .page-link {
+            background-color: #373D6D;
+            border-color: #373D6D;
+            color: white;
+        }
+        .pagination .page-link:hover {
+            background-color: #e9ecef;
+            color: #2a2f57;
+        }
+        .pagination .page-item.disabled .page-link {
+            color: #878787;
+        }
+    </style>
 </head>
 <body>
     <main role="main">
