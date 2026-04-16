@@ -1,24 +1,52 @@
 using Microsoft.AspNetCore.Mvc;
 using TableViewer.Services;
 
-namespace TableViewer.Controllers;
+namespace RDMWithDatabase.Controllers;
 
-public class HomeController(
-    ViewService viewService,
-    AuthService authService,
-    ILogger<HomeController> logger) : Controller
+public class HomeController : Controller
 {
-    public async Task<IActionResult> Index()
+    private readonly ViewService _viewService;
+    private readonly AuthService _authService;
+    private readonly ILogger<HomeController> _logger;
+
+    public HomeController(
+        ViewService viewService,
+        AuthService authService,
+        ILogger<HomeController> logger)
     {
-        var groups = await viewService.GetGroupsAsync();
-        var allViews = await viewService.GetAllViewsAsync();
-
-        ViewBag.Groups = groups;
-        ViewBag.AllViews = allViews;
-
-        return View();
+        _viewService = viewService;
+        _authService = authService;
+        _logger = logger;
     }
 
+    // Главная страница - список групп
+// Главная страница - список групп таблицей
+    public async Task<IActionResult> Index()
+    {
+        var groups = await _viewService.GetGroupsAsync();
+        var allViews = await _viewService.GetAllViewsAsync();
+
+        ViewBag.AllViews = allViews;
+        return View(groups);
+    }
+
+    // Страница группы - список запросов в группе
+    [Route("group/{groupName}")]
+    public async Task<IActionResult> Group(string groupName)
+    {
+        var allViews = await _viewService.GetAllViewsAsync();
+        var viewsInGroup = allViews.Where(v => v.Group == groupName).ToList();
+
+        if (!viewsInGroup.Any())
+        {
+            return NotFound();
+        }
+
+        ViewBag.GroupName = groupName;
+        return View(viewsInGroup);
+    }
+
+    // Страница с результатами запроса
     [Route("{link}")]
     public async Task<IActionResult> ViewData(
         string link,
@@ -26,19 +54,19 @@ public class HomeController(
         [FromQuery] string? sortColumn,
         [FromQuery] string? sortDirection)
     {
-        var viewConfig = await viewService.GetViewByLinkAsync(link);
+        var viewConfig = await _viewService.GetViewByLinkAsync(link);
 
         if (viewConfig == null)
         {
             return NotFound();
         }
 
-        if (!authService.CanAccessProtectedView(viewConfig))
+        if (!_authService.CanAccessProtectedView(viewConfig))
         {
             return Challenge();
         }
 
-        var (data, columns) = await viewService.ExecuteViewQueryAsync(
+        var (data, columns) = await _viewService.ExecuteViewQueryAsync(
             viewConfig,
             viewConfig.AllowFiltering ? filters : null,
             viewConfig.AllowSorting ? sortColumn : null,
@@ -46,7 +74,7 @@ public class HomeController(
 
         ViewBag.ViewConfig = viewConfig;
         ViewBag.Columns = columns;
-        ViewBag.Filters = filters;
+        ViewBag.Filters = filters ?? new Dictionary<string, string>();
         ViewBag.SortColumn = sortColumn;
         ViewBag.SortDirection = sortDirection;
 

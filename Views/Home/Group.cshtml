@@ -1,0 +1,127 @@
+@model List<TableViewer.Models.ViewConfig>
+
+@{
+    var groupName = ViewBag.GroupName as string;
+    ViewData["Title"] = $"{groupName} - Запросы";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Хлебные крошки -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/"><i class="bi bi-house"></i> Группы</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">@groupName</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-folder" style="color: #373D6D;"></i>
+                    Группа: @groupName
+                </h1>
+                <span class="badge bg-primary fs-6">@Model.Count запрос(ов)</span>
+            </div>
+
+            @if (Model == null || !Model.Any())
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> В этой группе нет запросов.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th><i class="bi bi-file-text"></i> Заголовок</th>
+                                <th><i class="bi bi-info-circle"></i> Описание</th>
+                                <th><i class="bi bi-gear"></i> Тип</th>
+                                <th><i class="bi bi-arrow-down-up"></i> Сортировка по умолчанию</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var view in Model)
+                            {
+                                <tr class="clickable-row" data-href="/@view.Link">
+                                    <td>
+                                        <strong>@view.Header</strong>
+                                        @if (view.IsSimple)
+                                        {
+                                            <span class="badge bg-success ms-1">Simple</span>
+                                        }
+                                        @if (view.IsProtected)
+                                        {
+                                            <span class="badge bg-warning ms-1">🔒 Protected</span>
+                                        }
+                                    </td>
+                                    <td>@(view.Description ?? "—")</td>
+                                    <td>
+                                        @if (view.AllowFiltering && view.AllowSorting)
+                                        {
+                                            <span class="badge bg-info">Filtering + Sorting</span>
+                                        }
+                                        else if (view.AllowFiltering)
+                                        {
+                                            <span class="badge bg-info">Filtering only</span>
+                                        }
+                                        else if (view.AllowSorting)
+                                        {
+                                            <span class="badge bg-info">Sorting only</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Simple view</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(view.DefaultSortField))
+                                        {
+                                            <code>@view.DefaultSortField (ASC)</code>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Дополнительная информация -->
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="bi bi-bar-chart"></i> Статистика группы
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">
+                                    <strong>Всего запросов:</strong> @Model.Count<br/>
+                                    <strong>С фильтрацией:</strong> @Model.Count(v => v.AllowFiltering)<br/>
+                                    <strong>С сортировкой:</strong> @Model.Count(v => v.AllowSorting)<br/>
+                                    <strong>Защищенных:</strong> @Model.Count(v => v.IsProtected)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const rows = document.querySelectorAll('.clickable-row');
+        rows.forEach(row => {
+            row.addEventListener('click', function() {
+                window.location.href = this.dataset.href;
+            });
+        });
+    });
+</script>

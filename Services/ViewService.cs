@@ -52,7 +52,7 @@ public class ViewService(
             SELECT COLUMN_NAME
             FROM [{view.DatabaseName}].INFORMATION_SCHEMA.COLUMNS
             WHERE TABLE_SCHEMA = '{view.SchemaName}'
-              AND TABLE_NAME = '{view.TableName}'
+            AND TABLE_NAME = '{view.TableName}'
             ORDER BY ORDINAL_POSITION
             """;
 
@@ -83,17 +83,36 @@ public class ViewService(
             }
         }
 
-        // Сортировка
-        if (view.AllowSorting && !string.IsNullOrEmpty(sortColumn) && columns.Contains(sortColumn))
+        // НОВАЯ ЛОГИКА СОРТИРОВКИ:
+        // Приоритет: 1. Явная сортировка от пользователя, 2. Сортировка по умолчанию, 3. Без сортировки
+        string? finalSortColumn = null;
+        string? finalSortDirection = null;
+
+        if (view.AllowSorting)
         {
-            var direction = sortDirection?.ToUpper() == "DESC" ? "DESC" : "ASC";
-            sqlBuilder.Append($" ORDER BY [{sortColumn}] {direction}");
+            if (!string.IsNullOrEmpty(sortColumn) && columns.Contains(sortColumn))
+            {
+                // Пользователь явно запросил сортировку
+                finalSortColumn = sortColumn;
+                finalSortDirection = sortDirection?.ToUpper() == "DESC" ? "DESC" : "ASC";
+            }
+            else if (!string.IsNullOrEmpty(view.DefaultSortField) && columns.Contains(view.DefaultSortField))
+            {
+                // Используем сортировку по умолчанию (всегда ASC)
+                finalSortColumn = view.DefaultSortField;
+                finalSortDirection = "ASC";
+            }
+
+            // Применяем сортировку если есть
+            if (!string.IsNullOrEmpty(finalSortColumn))
+            {
+                sqlBuilder.Append($" ORDER BY [{finalSortColumn}] {finalSortDirection}");
+            }
         }
 
         var finalData = await connection.QueryAsync(sqlBuilder.ToString());
         return (finalData, columns);
     }
-
     public async Task AddViewAsync(ViewConfig view)
     {
         context.Views.Add(view);

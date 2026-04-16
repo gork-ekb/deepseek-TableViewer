@@ -55,4 +55,12 @@ public class ViewConfig
 
     [Column("description")]
     public string? Description { get; set; }
+
+    // НОВЫЕ ПОЛЯ
+    [Column("is_simple")]
+    public bool IsSimple { get; set; } = false;
+
+    [Column("default_sort_field")]
+    [MaxLength(50)]
+    public string? DefaultSortField { get; set; }
 }

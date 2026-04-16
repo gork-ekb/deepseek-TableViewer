@@ -5,64 +5,107 @@
     ViewData["Title"] = viewConfig?.Header;
     var columns = ViewBag.Columns as List<string>;
     var filters = ViewBag.Filters as Dictionary<string, string>;
-
-    // Преобразуем все данные в список словарей для удобства
-    var dataRows = new List<Dictionary<string, object>>();
-    foreach (var item in Model ?? Enumerable.Empty<dynamic>())
-    {
-        var dict = new Dictionary<string, object>();
-        var itemDict = item as IDictionary<string, object>;
-        if (itemDict != null)
-        {
-            foreach (var column in columns ?? new List<string>())
-            {
-                dict[column] = itemDict.ContainsKey(column) ? itemDict[column] : null;
-            }
-            dataRows.Add(dict);
-        }
-    }
+    var currentSortColumn = ViewBag.SortColumn as string;
+    var currentSortDirection = ViewBag.SortDirection as string;
+    var groupName = viewConfig?.Group;
 }
 
 <div class="container mt-4">
+    <!-- Хлебные крошки -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Группы</a></li>
+            @if (!string.IsNullOrEmpty(groupName))
+            {
+                <li class="breadcrumb-item"><a href="/group/@groupName">@groupName</a></li>
+            }
+            <li class="breadcrumb-item active" aria-current="page">@viewConfig?.Header</li>
+        </ol>
+    </nav>
+
+    <!-- Заголовок -->
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1>@viewConfig?.Header</h1>
-        <a href="/" class="btn btn-secondary">← Назад к списку</a>
+        <div>
+            <h1 style="color: #373D6D;">@viewConfig?.Header</h1>
+            <div class="mt-2">
+                @if (viewConfig?.IsSimple == true)
+                {
+                    <span class="badge bg-success">Simple View</span>
+                }
+                @if (viewConfig?.IsProtected == true)
+                {
+                    <span class="badge bg-warning">🔒 Protected</span>
+                }
+                @if (viewConfig?.AllowFiltering == true)
+                {
+                    <span class="badge bg-info">🔍 Filtering enabled</span>
+                }
+                @if (viewConfig?.AllowSorting == true)
+                {
+                    <span class="badge bg-info">📊 Sorting enabled</span>
+                }
+            </div>
+        </div>
+        <div>
+            <a href="/group/@groupName" class="btn btn-secondary" style="background-color: #878787; border-color: #878787;">
+            <a href="/" class="btn btn-outline-secondary ms-2" style="color: #373D6D; border-color: #373D6D;">
+        </div>
     </div>
 
+    <!-- Описание -->
     @if (viewConfig != null && !string.IsNullOrEmpty(viewConfig.Description))
     {
         <div class="alert alert-info">
-            @viewConfig.Description
+            <i class="bi bi-info-circle"></i> @viewConfig.Description
         </div>
     }
 
+    <!-- Информация о сервере и таблице -->
+    <div class="alert alert-light border mb-3">
+        <small>
+            <strong>Server:</strong> @viewConfig?.Host |
+            <strong>Database:</strong> @viewConfig?.DatabaseName |
+            <strong>Table:</strong> @viewConfig?.SchemaName.@viewConfig?.TableName
+        </small>
+    </div>
+
+    <!-- Фильтрация -->
     @if (viewConfig?.AllowFiltering == true && columns != null && columns.Any())
     {
         <div class="card mb-3">
-            <div class="card-header">
-                <strong>Фильтрация данных</strong>
+            <div class="card-header bg-light">
+                <strong>🔍 Фильтрация данных</strong>
             </div>
             <div class="card-body">
                 <form method="get" class="row g-3">
                     @foreach (var column in columns.Take(5))
                     {
                         <div class="col-md-3">
-                            <label class="form-label">@column</label>
-                            <input type="text" name="@column" class="form-control"
+                            <label class="form-label small fw-bold">@column</label>
+                            <input type="text" name="@column" class="form-control form-control-sm"
                                    placeholder="Введите значение..."
                                    value="@(filters?.ContainsKey(column) == true ? filters[column] : "")" />
                         </div>
                     }
                     <div class="col-12">
-                        <button type="submit" class="btn btn-primary">Применить фильтры</button>
-                        <a href="@Context.Request.Path" class="btn btn-secondary">Сбросить</a>
+                        <button type="submit" class="btn btn-primary" style="background-color: #373D6D; border-color: #373D6D;">Применить фильтры</button>
+                        <a href="@Context.Request.Path" class="btn btn-secondary" style="background-color: #878787; border-color: #878787;">Сбросить</a>
                     </div>
                 </form>
             </div>
         </div>
     }
 
-    @if (dataRows.Any())
+    <!-- Информация о сортировке -->
+    @if (!string.IsNullOrEmpty(viewConfig?.DefaultSortField) && string.IsNullOrEmpty(currentSortColumn))
+    {
+        <div class="alert alert-secondary">
+            <small>📊 Сортировка по умолчанию: <strong>@viewConfig.DefaultSortField</strong> (по возрастанию)</small>
+        </div>
+    }
+
+    <!-- Таблица с данными -->
+    @if (Model != null && Model.Any())
     {
         <div class="table-responsive">
             <table class="table table-striped table-bordered table-hover">
@@ -75,8 +118,10 @@
                                 @if (viewConfig?.AllowSorting == true)
                                 {
                                     <div class="btn-group btn-group-sm ms-2" role="group">
-                                        <a href="?sortColumn=@column&sortDirection=ASC" class="btn btn-outline-light btn-sm">↑</a>
-                                        <a href="?sortColumn=@column&sortDirection=DESC" class="btn btn-outline-light btn-sm">↓</a>
+                                        <a href="?sortColumn=@column&sortDirection=ASC&@(string.Join("&", filters?.Select(f => $"{f.Key}={f.Value}") ?? Array.Empty<string>()))"
+                                           class="btn btn-outline-light btn-sm @(currentSortColumn == column && currentSortDirection == "ASC" ? "active" : "")">↑</a>
+                                        <a href="?sortColumn=@column&sortDirection=DESC&@(string.Join("&", filters?.Select(f => $"{f.Key}={f.Value}") ?? Array.Empty<string>()))"
+                                           class="btn btn-outline-light btn-sm @(currentSortColumn == column && currentSortDirection == "DESC" ? "active" : "")">↓</a>
                                     </div>
                                 }
                             </th>
@@ -84,27 +129,28 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var row in dataRows)
+                    @foreach (var item in Model)
                     {
                         <tr>
                             @foreach (var column in columns ?? new List<string>())
                             {
-                                var value = row.ContainsKey(column) ? row[column] : null;
+                                var dict = item as IDictionary<string, object>;
+                                var value = dict != null && dict.ContainsKey(column) ? dict[column] : null;
                                 <td>@value</td>
                             }
                         </tr>
                     }
                 </tbody>
             </table>
-            <div class="text-muted">
-                Всего записей: @dataRows.Count
+            <div class="text-muted mt-2">
+                <small>Всего записей: @Model.Count()</small>
             </div>
         </div>
     }
     else
     {
         <div class="alert alert-warning">
-            Нет данных для отображения. Возможно, таблица пуста или не существует.
+            <i class="bi bi-exclamation-triangle"></i> Нет данных для отображения. Возможно, таблица пуста или не существует.
         </div>
     }
 </div>
