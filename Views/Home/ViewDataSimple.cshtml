@@ -1,0 +1,88 @@
+@{
+    Layout = ViewBag.Layout ?? "_LayoutSimple";
+    var viewConfig = ViewBag.ViewConfig as TableViewer.Models.ViewConfig;
+    ViewData["Title"] = viewConfig?.Header;
+    var columns = ViewBag.Columns as List<string>;
+}
+
+@if (Model == null)
+{
+    <div class="alert alert-warning text-center">Нет данных для отображения</div>
+}
+else
+{
+    var items = Model as IEnumerable<dynamic>;
+    var hasItems = items != null && items.GetEnumerator().MoveNext();
+
+    if (!hasItems)
+    {
+        <div class="alert alert-warning text-center">Нет данных для отображения</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        @foreach (var column in columns ?? new List<string>())
+                        {
+                            <th>@column</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in items)
+                    {
+                        <tr>
+                            @foreach (var column in columns ?? new List<string>())
+                            {
+                                var dict = item as IDictionary<string, object>;
+                                var value = dict != null && dict.ContainsKey(column) ? dict[column] : null;
+                                <td>@value</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (ViewBag.PageSize != null && ViewBag.PageSize > 0 && ViewBag.TotalPages > 1)
+        {
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div><small class="text-muted">Показано @(((ViewBag.CurrentPage - 1) * ViewBag.PageSize) + 1) -
+                    @(Math.Min(ViewBag.CurrentPage * ViewBag.PageSize, ViewBag.TotalCount)) из @ViewBag.TotalCount
+                    записей</small></div>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")"><a class="page-link"
+                                                                                                       href="?page=1">««</a></li>
+                                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")"><a class="page-link"
+                                                                                                           href="?page=@(ViewBag.CurrentPage - 1)">«</a></li>
+                                    @{
+                                        int startPage = Math.Max(1, ViewBag.CurrentPage - 2);
+                                        int endPage = Math.Min(ViewBag.TotalPages, ViewBag.CurrentPage + 2);
+                                        if (startPage > 1)
+                                        {
+                                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                                        }
+                                        for (int i = startPage; i <= endPage; i++)
+                                        {
+                                            <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")"><a class="page-link"
+                                                                                                                     href="?page=@i">@i</a></li>
+                                            }
+                                            if (endPage < ViewBag.TotalPages)
+                                            {
+
+                                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                                            }
+                                        }
+                                        <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")"><a class="page-link"
+                                                                                                                                    href="?page=@(ViewBag.CurrentPage + 1)">»</a></li>
+                                            <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")"><a class="page-link"
+                                                                                                                                        href="?page=@ViewBag.TotalPages">»»</a></li>
+                                            </ul>
+                                        </nav>
+                                    </div>
+                                }
+                            }
+                        }
