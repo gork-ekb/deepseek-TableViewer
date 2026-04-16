@@ -24,7 +24,7 @@
             else
             {
                 <div class="table-responsive">
-                    <table class="table table-striped table-bordered table-hover">
+                    <table class="table table-striped table-bordered table-hover table-sm">
                         <thead class="table-dark">
                             <tr>
                                 <th><i class="bi bi-tag"></i> Название группы</th>
@@ -41,11 +41,11 @@
                                 <tr class="clickable-row" data-href="/group/@group">
                                     <td>
                                         <strong>@group</strong>
-                                     </td>
+                                    </td>
                                     <td>
                                         <span class="badge bg-primary">@viewCount</span>
-                                     </td>
-                                 </tr>
+                                    </td>
+                                </tr>
                             }
                         </tbody>
                     </table>
@@ -56,10 +56,10 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const rows = document.querySelectorAll('.clickable-row');
         rows.forEach(row => {
-            row.addEventListener('click', function() {
+            row.addEventListener('click', function () {
                 window.location.href = this.dataset.href;
             });
         });

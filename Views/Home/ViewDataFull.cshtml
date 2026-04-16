@@ -25,8 +25,8 @@ else
     }
     else
     {
-        <div class="table-responsive">
-            <table class="table table-striped table-bordered table-hover table-sm">
+        <div class="table-responsive" style="overflow: visible !important;">
+            <table class="table table-striped table-bordered table-hover table-sm" style="overflow: visible !important;">
                 <thead class="table-dark">
                     <tr>
                         @foreach (var column in columns ?? new List<string>())
@@ -47,12 +47,12 @@ else
                                             <span class="filter-icon">🔍</span>
                                         }
                                     </span>
-                                    <div class="dropdown">
+                                    <div class="dropdown" style="position: static;">
                                         <button class="btn btn-sm btn-outline-light dropdown-toggle"
                                                 type="button"
                                                 data-bs-toggle="dropdown"
                                                 style="padding: 2px 8px;">⋮</button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
+                                        <ul class="dropdown-menu dropdown-menu-end" style="position: absolute; z-index: 9999;">
                                             @if (viewConfig?.AllowSorting == true)
                                             {
                                                 <li><h6 class="dropdown-header">Сортировка</h6></li>
@@ -64,24 +64,24 @@ else
                                             {
                                                 <li><h6 class="dropdown-header">Фильтрация</h6></li>
                                                 <li>
-                                                    <form method="get" class="px-2 py-1" id="filterForm-@column">
+                                                    <form method="get" class="px-2 py-1">
                                                         <div class="mb-2">
                                                             <input type="text" name="@column" class="form-control form-control-sm"
-                                                                placeholder="Введите значение..."
-                                                                value="@(filters?.ContainsKey(column) == true ? filters[column] : "")" />
+                                                                   placeholder="Введите значение..."
+                                                                   value="@(filters?.ContainsKey(column) == true ? filters[column] : "")" />
                                                         </div>
                                                         <div class="d-flex gap-2">
                                                             <button type="submit" class="btn btn-primary btn-sm flex-grow-1">Применить</button>
-                                                            @if (filters != null && filters.ContainsKey(column) && !string.IsNullOrEmpty(filters[column]))
-                                                            {
-                                                                var newFilters = filters.Where(f => f.Key != column).ToDictionary(f => f.Key, f => f.Value);
-                                                                var resetUrl = "?" + string.Join("&", newFilters.Select(f => $"{f.Key}={f.Value}"));
+                                                            @{
+                                                                // Формируем URL для сброса ТОЛЬКО этого фильтра
+                                                                var resetFilters = filters?.Where(f => f.Key != column).ToDictionary(f => f.Key, f => f.Value);
+                                                                var resetUrl = "?" + string.Join("&", resetFilters?.Select(f => $"{f.Key}={f.Value}") ?? Array.Empty<string>());
                                                                 if (!string.IsNullOrEmpty(currentSortColumn))
                                                                 {
-                                                                    resetUrl += (newFilters.Any() ? "&" : "") + $"sortColumn={currentSortColumn}&sortDirection={currentSortDirection}";
+                                                                    resetUrl += (resetFilters?.Any() == true ? "&" : "") + $"sortColumn={currentSortColumn}&sortDirection={currentSortDirection}";
                                                                 }
-                                                                <a href="@resetUrl" class="btn btn-secondary btn-sm">Сброс</a>
                                                             }
+                                                            <a href="@resetUrl" class="btn btn-secondary btn-sm">Сброс</a>
                                                         </div>
                                                     </form>
                                                 </li>
@@ -134,68 +134,32 @@ else
                 </nav>
             </div>
         }
-
-        @* if (filters != null && filters.Any(f => !string.IsNullOrEmpty(f.Value)))
-        {
-            <div class="text-muted mt-2">
-                <small><strong>Активные фильтры:</strong>
-                @foreach (var filter in filters.Where(f => !string.IsNullOrEmpty(f.Value)))
-                {
-                    <span class="badge bg-warning text-dark ms-1">
-                        @filter.Key = "@filter.Value"
-                        <a href="?removeFilter=@filter.Key" style="text-decoration: none; color: inherit;">✖</a>
-                    </span>
-                }
-                <a href="?clearFilters=true" class="ms-2">Очистить все</a>
-                </small>
-            </div>
-        } *@
     }
 }
 
 </div>
 
 <style>
+    /* Стили для переполнения и позиционирования */
+    .table-responsive, .table, .table thead, .table tbody, .table tr, .table th, .table td {
+        overflow: visible !important;
+    }
+    .dropdown-menu {
+        position: absolute;
+        z-index: 9999;
+        min-width: 250px;
+    }
+    .dropdown-toggle::after { display: none; }
     .filter-active { background-color: #FFCD80 !important; }
     .filter-active-header { background-color: #FF9A00 !important; color: #000 !important; }
     .sort-icon, .filter-icon { margin-left: 5px; font-size: 0.8em; }
-    .dropdown-toggle::after { display: none; }
-    .table-responsive { overflow-x: auto !important; }
-    /* Уменьшаем отступы еще больше */
-    .table-sm td, .table-sm th {
-        padding: 0.2rem 0.4rem !important;
-    }
-
-    /* Уменьшаем высоту кнопок в заголовках */
-    .table-sm .dropdown-toggle {
-        padding: 0.1rem 0.4rem !important;
-        font-size: 0.8rem;
-    }
-
-    /* Уменьшаем отступы внутри ячеек с фильтрами */
-    .table-sm td, .table-sm th {
-        white-space: nowrap;
-    }
-
-    /* Адаптация для мобильных */
-    @@media (max-width: 768px) {
-        .table-sm td, .table-sm th {
-            padding: 0.15rem 0.3rem !important;
-            font-size: 0.85rem;
-        }
-    }
-
-    /* Стили для кнопок в выпадающем меню */
-    .dropdown-menu .btn-sm {
-        font-size: 0.75rem;
-        padding: 0.2rem 0.5rem;
-    }
-
-    .dropdown-menu .gap-2 {
-        gap: 0.5rem !important;
-    }
-
-    .flex-grow-1 {
-        flex-grow: 1 !important;
-    }
+    .btn-outline-light { color: white !important; border-color: white !important; }
+    .btn-outline-light:hover { background-color: rgba(255,255,255,0.2) !important; }
+    .pagination .page-link { color: #373D6D; border-color: #dee2e6; }
+    .pagination .page-item.active .page-link { background-color: #373D6D; border-color: #373D6D; color: white; }
+    .pagination .page-link:hover { background-color: #e9ecef; color: #2a2f57; }
+    .pagination .page-item.disabled .page-link { color: #878787; }
+    .dropdown-menu .btn-sm { font-size: 0.75rem; padding: 0.2rem 0.5rem; }
+    .dropdown-menu .gap-2 { gap: 0.5rem !important; }
+    .flex-grow-1 { flex-grow: 1 !important; }
 </style>

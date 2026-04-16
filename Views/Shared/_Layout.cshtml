@@ -33,6 +33,23 @@
             color: #e0e0e0 !important;
         }
 
+        /* Стиль для заголовка текущего запроса в навбаре */
+        .navbar-current-view {
+            font-size: 1rem;
+            color: rgba(255,255,255,0.9);
+            border-left: 1px solid rgba(255,255,255,0.3);
+            padding-left: 1rem;
+            margin-left: 1rem;
+        }
+        .navbar-current-view i {
+            margin-right: 0.3rem;
+        }
+        @@media (max-width: 768px) {
+            .navbar-current-view {
+                display: none;
+            }
+        }
+
         /* Button styling */
         .btn-primary {
             background-color: var(--primary-dark);
@@ -148,8 +165,6 @@
         .breadcrumb-item.active {
             color: var(--primary-gray);
         }
-    </style>
-    <style>
         .table-responsive, .table, .table thead, .table tbody, .table tr, .table th, .table td { overflow: visible !important; }
         .dropdown-menu { position: absolute; z-index: 9999; min-width: 250px; }
         .dropdown-toggle::after { display: none; }
@@ -166,8 +181,16 @@
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm border-bottom box-shadow mb-3">
             <div class="container">
                 <a class="navbar-brand" href="/">
-                    <i class="bi bi-table"></i> @(ViewBag.AppTitle ?? "TableViewer")
+                    <i class="bi bi-table"></i><strong>@(ViewBag.AppTitle ?? "TableViewer")</strong>
                 </a>
+                <!-- Отображение заголовка текущего запроса -->
+                @if (!string.IsNullOrEmpty(ViewBag.CurrentViewHeader))
+                {
+                    <span class="navbar-current-view">
+                        @* <i class="bi bi-arrow-right-short"></i> *@
+                        <i class="bi bi-file-text"></i><strong>@ViewBag.CurrentViewHeader</strong>
+                    </span>
+                }
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse">
                     <span class="navbar-toggler-icon"></span>
                 </button>
