@@ -2,12 +2,7 @@
     Layout = ViewBag.Layout ?? "_Layout";
     var viewConfig = ViewBag.ViewConfig as TableViewer.Models.ViewConfig;
     ViewData["Title"] = viewConfig?.Header;
-    var columns = ViewBag.Columns as List<string>;
-    var filters = ViewBag.Filters as Dictionary<string, string>;
-    var currentSortColumn = ViewBag.SortColumn as string;
-    var currentSortDirection = ViewBag.SortDirection as string;
     var isSimpleMode = viewConfig?.IsSimple ?? false;
-    var hasFilters = filters != null && filters.Any(f => !string.IsNullOrEmpty(f.Value));
 }
 
 @if (!isSimpleMode)
@@ -23,202 +18,75 @@
 }
 else
 {
-    <div class="table-responsive" style="overflow-x: auto; overflow-y: visible;">
-        <table class="table table-striped table-bordered table-hover" style="overflow: visible;">
-            <thead class="table-dark">
-                <tr>
-                    @foreach (var column in columns ?? new List<string>())
-                    {
-                        bool hasFilter = filters != null && filters.ContainsKey(column) && !string.IsNullOrEmpty(filters[column]);
-                        bool isSorted = currentSortColumn == column;
+    @await Html.PartialAsync("_TableView", Model)
 
-                        <th style="min-width: 150px; position: relative;" class="@(hasFilter ? "filter-active-header" : "")">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span>@column</span>
-                                    @if (isSorted)
-                                    {
-                                        if (currentSortDirection == "ASC")
-                                        {
-                                            <span class="sort-icon">▲</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="sort-icon">▼</span>
-                                        }
-                                    }
-                                    @if (hasFilter)
-                                    {
-                                        <span class="filter-icon" title="Фильтр активен: @filters[column]">🔍</span>
-                                    }
-                                </div>
-                                @if (!isSimpleMode)
-                                {
-                                    <div class="dropdown" style="position: static;">
-                                        <button class="btn btn-sm btn-outline-light dropdown-toggle"
-                                                type="button"
-                                                data-bs-toggle="dropdown"
-                                                aria-expanded="false"
-                                                style="padding: 2px 8px;">
-                                            <i class="bi bi-three-dots-vertical"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            @if (viewConfig?.AllowSorting == true)
-                                            {
-                                                <li class="mb-2"><h6 class="dropdown-header">Сортировка</h6></li>
-                                                <li><a class="dropdown-item @(currentSortColumn == column && currentSortDirection == "ASC" ? "active" : "")"
-                                                       href="?sortColumn=@column&sortDirection=ASC&@(string.Join("&", filters?.Select(f => $"{f.Key}={f.Value}") ?? Array.Empty<string>()))">
-                                                    <i class="bi bi-arrow-up"></i> По возрастанию
-                                                    @if (currentSortColumn == column && currentSortDirection == "ASC") { <span class="float-end">✓</span> }
-                                                </a></li>
-                                                <li class="mb-2"><a class="dropdown-item @(currentSortColumn == column && currentSortDirection == "DESC" ? "active" : "")"
-                                                       href="?sortColumn=@column&sortDirection=DESC&@(string.Join("&", filters?.Select(f => $"{f.Key}={f.Value}") ?? Array.Empty<string>()))">
-                                                    <i class="bi bi-arrow-down"></i> По убыванию
-                                                    @if (currentSortColumn == column && currentSortDirection == "DESC") { <span class="float-end">✓</span> }
-                                                </a></li>
-                                                <li><a class="dropdown-item" href="?@(string.Join("&", filters?.Select(f => $"{f.Key}={f.Value}") ?? Array.Empty<string>()))">
-                                                    <i class="bi bi-x"></i> Сбросить сортировку
-                                                </a></li>
-                                            }
-                                            @if (viewConfig?.AllowFiltering == true)
-                                            {
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li><h6 class="dropdown-header">Фильтрация</h6></li>
-                                                <li>
-                                                    <form method="get" class="px-2 py-1">
-                                                        <div class="mb-2">
-                                                            <input type="text" name="@column" class="form-control form-control-sm"
-                                                                   placeholder="Введите значение..."
-                                                                   value="@(filters?.ContainsKey(column) == true ? filters[column] : "")" />
-                                                        </div>
-                                                        <div class="d-flex gap-2">
-                                                            <button type="submit" class="btn btn-primary btn-sm w-100">Применить</button>
-                                                            @if (hasFilter)
-                                                            {
-                                                                var newFilters = filters?.Where(f => f.Key != column).ToDictionary(f => f.Key, f => f.Value);
-                                                                var filterUrl = "?" + string.Join("&", newFilters?.Select(f => $"{f.Key}={f.Value}") ?? Array.Empty<string>());
-                                                                if (!string.IsNullOrEmpty(currentSortColumn))
-                                                                {
-                                                                    filterUrl += (newFilters?.Any() == true ? "&" : "") + $"sortColumn={currentSortColumn}&sortDirection={currentSortDirection}";
-                                                                }
-                                                                <a href="@filterUrl" class="btn btn-secondary btn-sm w-100">Сброс</a>
-                                                            }
-                                                        </div>
-                                                    </form>
-                                                </li>
-                                            }
-                                        </ul>
-                                    </div>
-                                }
-                            </div>
-                        </th>
-                    }
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in Model)
-                {
-                    <tr>
-                        @foreach (var column in columns ?? new List<string>())
-                        {
-                            bool hasFilter = filters != null && filters.ContainsKey(column) && !string.IsNullOrEmpty(filters[column]);
-                            var dict = item as IDictionary<string, object>;
-                            var value = dict != null && dict.ContainsKey(column) ? dict[column] : null;
-                            <td class="@(hasFilter ? "filter-active" : "")">@value</td>
-                        }
-                    </tr>
-                }
-            </tbody>
-        </table>
-
-        @if (!isSimpleMode && hasFilters)
+    @if (ViewBag.PageSize != null && ViewBag.PageSize > 0 && ViewBag.TotalPages > 1)
+    {
+        var filterParams = "";
+        if (ViewBag.Filters != null)
         {
-            <div class="text-muted mt-2">
-                <small>Всего записей: @Model.Count()</small>
-                <span class="ms-3">
-                    <strong>Активные фильтры:</strong>
-                    @foreach (var filter in filters.Where(f => !string.IsNullOrEmpty(f.Value)))
-                    {
-                        var newFilters = filters.Where(f => f.Key != filter.Key).ToDictionary(f => f.Key, f => f.Value);
-                        var clearUrl = "?" + string.Join("&", newFilters.Select(f => $"{f.Key}={f.Value}"));
-                        if (!string.IsNullOrEmpty(currentSortColumn))
-                        {
-                            clearUrl += (newFilters.Any() ? "&" : "") + $"sortColumn={currentSortColumn}&sortDirection={currentSortDirection}";
-                        }
-                        <span class="badge bg-warning text-dark ms-1">
-                            @filter.Key = "@filter.Value"
-                            <a href="@clearUrl" style="text-decoration: none; color: inherit;">✖</a>
-                        </span>
-                    }
-                    var clearAllUrl = "?" + (!string.IsNullOrEmpty(currentSortColumn) ? $"sortColumn={currentSortColumn}&sortDirection={currentSortDirection}" : "");
-                    <a href="@clearAllUrl" class="ms-2">Очистить все</a>
-                </span>
-            </div>
+            var filterList = new List<string>();
+            foreach (var filter in ViewBag.Filters)
+            {
+                if (!string.IsNullOrEmpty(filter.Value))
+                {
+                    filterList.Add($"{filter.Key}={Uri.EscapeDataString(filter.Value)}");
+                }
+            }
+            filterParams = string.Join("&", filterList);
+        }
+        var sortParams = "";
+        if (!string.IsNullOrEmpty(ViewBag.SortColumn))
+        {
+            sortParams = $"sortColumn={ViewBag.SortColumn}&sortDirection={ViewBag.SortDirection}";
+        }
+        var baseParams = sortParams;
+        if (!string.IsNullOrEmpty(filterParams))
+        {
+            baseParams += string.IsNullOrEmpty(sortParams) ? filterParams : $"&{filterParams}";
         }
 
-        @if (ViewBag.PageSize != null && ViewBag.PageSize > 0 && ViewBag.TotalPages > 1)
-        {
-            var filterParams = "";
-            if (ViewBag.Filters != null)
-            {
-                var filterList = new List<string>();
-                foreach (var filter in ViewBag.Filters)
-                {
-                    if (!string.IsNullOrEmpty(filter.Value))
-                    {
-                        filterList.Add($"{filter.Key}={Uri.EscapeDataString(filter.Value)}");
-                    }
-                }
-                filterParams = string.Join("&", filterList);
-            }
-            var sortParams = "";
-            if (!string.IsNullOrEmpty(ViewBag.SortColumn))
-            {
-                sortParams = $"sortColumn={ViewBag.SortColumn}&sortDirection={ViewBag.SortDirection}";
-            }
-            var baseParams = sortParams;
-            if (!string.IsNullOrEmpty(filterParams))
-            {
-                baseParams += string.IsNullOrEmpty(sortParams) ? filterParams : $"&{filterParams}";
-            }
-            <div class="d-flex justify-content-between align-items-center mt-3">
-                <div><small class="text-muted">Показано @(((ViewBag.CurrentPage - 1) * ViewBag.PageSize) + 1) - @(Math.Min(ViewBag.CurrentPage * ViewBag.PageSize, ViewBag.TotalCount)) из @ViewBag.TotalCount записей</small></div>
-                <nav><ul class="pagination pagination-sm mb-0">
-                    <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")"><a class="page-link" href="?page=1@(!string.IsNullOrEmpty(baseParams) ? $"&{baseParams}" : "")">««</a></li>
-                    <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")"><a class="page-link" href="?page=@(ViewBag.CurrentPage - 1)@(!string.IsNullOrEmpty(baseParams) ? $"&{baseParams}" : "")">«</a></li>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div>
+                <small class="text-muted">
+                    Показано @(((ViewBag.CurrentPage - 1) * ViewBag.PageSize) + 1) -
+                    @(Math.Min(ViewBag.CurrentPage * ViewBag.PageSize, ViewBag.TotalCount))
+                    из @ViewBag.TotalCount записей
+                </small>
+            </div>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                        <a class="page-link" href="?page=1@(!string.IsNullOrEmpty(baseParams) ? $"&{baseParams}" : "")">««</a>
+                    </li>
+                    <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                        <a class="page-link" href="?page=@(ViewBag.CurrentPage - 1)@(!string.IsNullOrEmpty(baseParams) ? $"&{baseParams}" : "")">«</a>
+                    </li>
                     @{
                         int startPage = Math.Max(1, ViewBag.CurrentPage - 2);
                         int endPage = Math.Min(ViewBag.TotalPages, ViewBag.CurrentPage + 2);
                         if (startPage > 1) { <li class="page-item disabled"><span class="page-link">...</span></li> }
                         for (int i = startPage; i <= endPage; i++)
                         {
-                            <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")"><a class="page-link" href="?page=@i@(!string.IsNullOrEmpty(baseParams) ? $"&{baseParams}" : "")">@i</a></li>
+                            <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                                <a class="page-link" href="?page=@i@(!string.IsNullOrEmpty(baseParams) ? $"&{baseParams}" : "")">@i</a>
+                            </li>
                         }
                         if (endPage < ViewBag.TotalPages) { <li class="page-item disabled"><span class="page-link">...</span></li> }
                     }
-                    <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")"><a class="page-link" href="?page=@(ViewBag.CurrentPage + 1)@(!string.IsNullOrEmpty(baseParams) ? $"&{baseParams}" : "")">»</a></li>
-                    <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")"><a class="page-link" href="?page=@ViewBag.TotalPages@(!string.IsNullOrEmpty(baseParams) ? $"&{baseParams}" : "")">»»</a></li>
-                </ul></nav>
-            </div>
-        }
-    </div>
+                    <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                        <a class="page-link" href="?page=@(ViewBag.CurrentPage + 1)@(!string.IsNullOrEmpty(baseParams) ? $"&{baseParams}" : "")">»</a>
+                    </li>
+                    <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                        <a class="page-link" href="?page=@ViewBag.TotalPages@(!string.IsNullOrEmpty(baseParams) ? $"&{baseParams}" : "")">»»</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
 }
 
 @if (!isSimpleMode)
 {
     </div>
 }
-
-<style>
-.table-responsive, .table, .table thead, .table tbody, .table tr, .table th, .table td { overflow: visible !important; }
-.dropdown-menu { position: absolute; z-index: 9999; min-width: 250px; }
-.dropdown-toggle::after { display: none; }
-.filter-active { background-color: #FFCD80 !important; transition: background-color 0.2s ease; }
-.sort-icon { margin-left: 5px; font-size: 0.8em; }
-.filter-icon { margin-left: 5px; font-size: 0.8em; color: #FFCD80; }
-th.filter-active-header { background-color: #FF9A00 !important; color: #000 !important; }
-th.filter-active-header .btn-outline-light { color: #000 !important; border-color: #000 !important; }
-@@media (max-width: 768px) { .dropdown-menu { position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; width: 90%; max-width: 300px; } }
-</style>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
