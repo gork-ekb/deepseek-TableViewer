@@ -56,11 +56,13 @@ public class ViewConfig
     [Column("description")]
     public string? Description { get; set; }
 
-    // НОВЫЕ ПОЛЯ
     [Column("is_simple")]
-    public bool IsSimple { get; set; } = false;
+    public bool IsSimple { get; set; }
 
     [Column("default_sort_field")]
     [MaxLength(50)]
     public string? DefaultSortField { get; set; }
+
+    [Column("page_size")]
+    public int PageSize { get; set; } = 0;
 }

@@ -222,6 +222,8 @@
                     }
                 </tbody>
             </table>
+
+            <!-- Информация о записях и активных фильтрах -->
             <div class="text-muted mt-2">
                 <small>Всего записей: @Model.Count()</small>
                 @if (filters != null && filters.Any(f => !string.IsNullOrEmpty(f.Value)))
@@ -230,25 +232,145 @@
                         <strong>Активные фильтры:</strong>
                         @foreach (var filter in filters.Where(f => !string.IsNullOrEmpty(f.Value)))
                         {
+                            // Создаем URL без текущего фильтра
+                            var newFilters = filters.Where(f => f.Key != filter.Key).ToDictionary(f => f.Key, f => f.Value);
+                            var clearUrl = "?";
+                            var paramsList = new List<string>();
+
+                            foreach (var f in newFilters)
+                            {
+                                paramsList.Add($"{f.Key}={f.Value}");
+                            }
+
+                            if (!string.IsNullOrEmpty(currentSortColumn))
+                            {
+                                paramsList.Add($"sortColumn={currentSortColumn}");
+                                paramsList.Add($"sortDirection={currentSortDirection}");
+                            }
+
+                            clearUrl += string.Join("&", paramsList);
+
                             <span class="badge bg-warning text-dark ms-1">
                                 @filter.Key = "@filter.Value"
-                                @{
-                                    var newFilters = filters.Where(f => f.Key != filter.Key).ToDictionary(f => f.Key, f => f.Value);
-                                    var clearUrl = "?" + string.Join("&", newFilters.Select(f => $"{f.Key}={f.Value}"));
-                                    if (!string.IsNullOrEmpty(currentSortColumn))
-                                    {
-                                        clearUrl += (newFilters.Any() ? "&" : "") +
-                    $"sortColumn={currentSortColumn}&sortDirection={currentSortDirection}";
-                                    }
-                                }
                                 <a href="@clearUrl" style="text-decoration: none; color: inherit;">✖</a>
                             </span>
                         }
-                        <a href="?@(string.IsNullOrEmpty(currentSortColumn) ? "" : $"sortColumn={currentSortColumn}&sortDirection={currentSortDirection}")"
-                           class="ms-2">Очистить все</a>
+
+                        @{
+                            var clearAllUrl = "?";
+                            var clearAllParams = new List<string>();
+                            if (!string.IsNullOrEmpty(currentSortColumn))
+                            {
+                                clearAllParams.Add($"sortColumn={currentSortColumn}");
+                                clearAllParams.Add($"sortDirection={currentSortDirection}");
+                            }
+                            clearAllUrl += string.Join("&", clearAllParams);
+                        }
+                        <a href="@clearAllUrl" class="ms-2">Очистить все</a>
                     </span>
                 }
             </div>
+
+            <!-- ПАГИНАЦИЯ -->
+            @if (ViewBag.PageSize != null && ViewBag.PageSize > 0 && ViewBag.TotalPages > 1)
+            {
+                // Создаем строку параметров фильтрации в коде
+                var filterParams = "";
+                if (ViewBag.Filters != null)
+                {
+                    var filterList = new List<string>();
+                    foreach (var filter in ViewBag.Filters)
+                    {
+                        if (!string.IsNullOrEmpty(filter.Value))
+                        {
+                            filterList.Add($"{filter.Key}={Uri.EscapeDataString(filter.Value)}");
+                        }
+                    }
+                    filterParams = string.Join("&", filterList);
+                }
+
+                var sortParams = "";
+                if (!string.IsNullOrEmpty(ViewBag.SortColumn))
+                {
+                    sortParams = $"sortColumn={ViewBag.SortColumn}&sortDirection={ViewBag.SortDirection}";
+                }
+
+                var baseParams = sortParams;
+                if (!string.IsNullOrEmpty(filterParams))
+                {
+                    baseParams += string.IsNullOrEmpty(sortParams) ? filterParams : $"&{filterParams}";
+                }
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        <small class="text-muted">
+                            Показано @(((ViewBag.CurrentPage - 1) * ViewBag.PageSize) + 1) -
+                            @(Math.Min(ViewBag.CurrentPage * ViewBag.PageSize, ViewBag.TotalCount))
+                            из @ViewBag.TotalCount записей
+                        </small>
+                    </div>
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm mb-0">
+                            <!-- Первая страница -->
+                            <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                                <a class="page-link" href="?page=1@(!string.IsNullOrEmpty(baseParams) ? $"&{baseParams}" : "")">
+                                    ««
+                                </a>
+                            </li>
+
+                            <!-- Предыдущая -->
+                            <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                                <a class="page-link"
+                                       href="?page=@(ViewBag.CurrentPage - 1)@(!string.IsNullOrEmpty(baseParams) ? $"&{baseParams}" : "")">
+                                    «
+                                </a>
+                            </li>
+
+                            <!-- Номера страниц -->
+                            @{
+                                int startPage = Math.Max(1, ViewBag.CurrentPage - 2);
+                                int endPage = Math.Min(ViewBag.TotalPages, ViewBag.CurrentPage + 2);
+
+                                if (startPage > 1)
+                                {
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                }
+
+                                for (int i = startPage; i <= endPage; i++)
+                                {
+                                    <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                                        <a class="page-link"
+                                               href="?page=@i@(!string.IsNullOrEmpty(baseParams) ? $"&{baseParams}" : "")">
+                                            @i
+                                        </a>
+                                    </li>
+                                }
+
+                                if (endPage < ViewBag.TotalPages)
+                                {
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                }
+                            }
+
+                            <!-- Следующая -->
+                            <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                                <a class="page-link"
+                                       href="?page=@(ViewBag.CurrentPage + 1)@(!string.IsNullOrEmpty(baseParams) ? $"&{baseParams}" : "")">
+                                    »
+                                </a>
+                            </li>
+
+                            <!-- Последняя страница -->
+                            <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                                <a class="page-link"
+                                       href="?page=@ViewBag.TotalPages@(!string.IsNullOrEmpty(baseParams) ? $"&{baseParams}" : "")">
+                                    »»
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
         </div>
     }
     else
@@ -267,7 +389,7 @@
             if (input.value) {
                 const th = input.closest('th');
                 if (th) {
-                    th.style.backgroundColor = '#FF9A00';  // Изменено с #FFCD80 на #FF9A00
+                    th.style.backgroundColor = '#FF9A00';
                     th.style.color = '#000';
                 }
             }
