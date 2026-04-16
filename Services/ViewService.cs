@@ -228,7 +228,7 @@ public class ViewService
 
             if (!string.IsNullOrEmpty(finalSortColumn))
             {
-                orderByClause = $" ORDER BY [{finalSortColumn}] {finalSortColumn}";
+                orderByClause = $" ORDER BY [{finalSortColumn}]";
             }
         }
 

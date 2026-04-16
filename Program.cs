@@ -12,7 +12,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddScoped<ViewService>();
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<SettingsService>();  // ДОБАВИТЬ
+builder.Services.AddScoped<SettingsService>();
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
