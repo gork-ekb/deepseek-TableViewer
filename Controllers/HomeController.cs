@@ -48,15 +48,15 @@ public class HomeController : BaseController
         return View(viewsInGroup);
     }
 
-    // Страница с результатами запроса
     // [Route("{link}")]
-    // public async Task<IActionResult> ViewData(
+    // public new async Task<IActionResult> ViewData(
     //     string link,
     //     [FromQuery] Dictionary<string, string> filters,
     //     [FromQuery] string? sortColumn,
-    //     [FromQuery] string? sortDirection)
+    //     [FromQuery] string? sortDirection,
+    //     [FromQuery] int page = 1)  // ДОБАВИТЬ ПАРАМЕТР PAGE
     // {
-    //     await SetAppTitle();  // Устанавливаем заголовок
+    //     await SetAppTitle();
     //     var viewConfig = await _viewService.GetViewByLinkAsync(link);
 
     //     if (viewConfig == null)
@@ -69,19 +69,45 @@ public class HomeController : BaseController
     //         return Challenge();
     //     }
 
-    //     var (data, columns) = await _viewService.ExecuteViewQueryAsync(
-    //         viewConfig,
-    //         viewConfig.AllowFiltering ? filters : null,
-    //         viewConfig.AllowSorting ? sortColumn : null,
-    //         viewConfig.AllowSorting ? sortDirection : null);
+    //     // Используем пагинацию если page_size > 0
+    //     if (viewConfig.PageSize > 0)
+    //     {
+    //         var (data, columns, totalCount) = await _viewService.ExecuteViewQueryWithPaginationAsync(
+    //             viewConfig,
+    //             viewConfig.AllowFiltering ? filters : null,
+    //             viewConfig.AllowSorting ? sortColumn : null,
+    //             viewConfig.AllowSorting ? sortDirection : null,
+    //             page);
 
-    //     ViewBag.ViewConfig = viewConfig;
-    //     ViewBag.Columns = columns;
-    //     ViewBag.Filters = filters ?? new Dictionary<string, string>();
-    //     ViewBag.SortColumn = sortColumn;
-    //     ViewBag.SortDirection = sortDirection;
+    //         ViewBag.ViewConfig = viewConfig;
+    //         ViewBag.Columns = columns;
+    //         ViewBag.Filters = filters ?? new Dictionary<string, string>();
+    //         ViewBag.SortColumn = sortColumn;
+    //         ViewBag.SortDirection = sortDirection;
+    //         ViewBag.TotalCount = totalCount;
+    //         ViewBag.CurrentPage = page;
+    //         ViewBag.PageSize = viewConfig.PageSize;
+    //         ViewBag.TotalPages = (int)Math.Ceiling((double)totalCount / viewConfig.PageSize);
 
-    //     return View(data);
+    //         return View(data);
+    //     }
+    //     else
+    //     {
+    //         // Без пагинации - старый метод
+    //         var (data, columns) = await _viewService.ExecuteViewQueryAsync(
+    //             viewConfig,
+    //             viewConfig.AllowFiltering ? filters : null,
+    //             viewConfig.AllowSorting ? sortColumn : null,
+    //             viewConfig.AllowSorting ? sortDirection : null);
+
+    //         ViewBag.ViewConfig = viewConfig;
+    //         ViewBag.Columns = columns;
+    //         ViewBag.Filters = filters ?? new Dictionary<string, string>();
+    //         ViewBag.SortColumn = sortColumn;
+    //         ViewBag.SortDirection = sortDirection;
+
+    //         return View(data);
+    //     }
     // }
 
     [Route("{link}")]
@@ -90,9 +116,8 @@ public class HomeController : BaseController
         [FromQuery] Dictionary<string, string> filters,
         [FromQuery] string? sortColumn,
         [FromQuery] string? sortDirection,
-        [FromQuery] int page = 1)  // ДОБАВИТЬ ПАРАМЕТР PAGE
+        [FromQuery] int page = 1)
     {
-        await SetAppTitle();
         var viewConfig = await _viewService.GetViewByLinkAsync(link);
 
         if (viewConfig == null)
@@ -103,6 +128,16 @@ public class HomeController : BaseController
         if (!_authService.CanAccessProtectedView(viewConfig))
         {
             return Challenge();
+        }
+
+        // Выбираем layout в зависимости от IsSimple
+        if (viewConfig.IsSimple)
+        {
+            ViewBag.Layout = "_LayoutSimple";
+        }
+        else
+        {
+            ViewBag.Layout = "_Layout";
         }
 
         // Используем пагинацию если page_size > 0
@@ -125,7 +160,7 @@ public class HomeController : BaseController
             ViewBag.PageSize = viewConfig.PageSize;
             ViewBag.TotalPages = (int)Math.Ceiling((double)totalCount / viewConfig.PageSize);
 
-            return View(data);
+            return View("ViewData", data);
         }
         else
         {
@@ -142,7 +177,7 @@ public class HomeController : BaseController
             ViewBag.SortColumn = sortColumn;
             ViewBag.SortDirection = sortDirection;
 
-            return View(data);
+            return View("ViewData", data);
         }
     }
 }
